@@ -1,0 +1,552 @@
+-- BETWEEN Range Search
+
+SELECT * FROM employees
+WHERE salary BETWEEN 4000 AND 10000
+
+-- IS NULL / IS NOT NULL
+
+-- find employees who commission pct equals null
+SELECT * FROM employees
+WHERE commission_pct IS NULL 
+
+--Calculate total salary
+SELECT salary,commission_pct,salary*(1+commission_pct) 
+FROM employees
+
+SELECT salary,commission_pct,NVL(commission_pct,0),
+       salary*(1+NVL(commission_pct,0)) 
+FROM employees
+
+
+SELECT salary,commission_pct,NVL(commission_pct,0),
+       salary*(1+NVL(commission_pct,0)) 
+FROM employees
+WHERE NVL(commission_pct,0)=0
+.
+
+--  department_id=90 OR salary>5000
+SELECT first_name,last_name,salary,department_id
+FROM employees
+WHERE salary > 5000
+  OR department_id=60
+
+-- ORDER BY
+-- order by salary
+SELECT * FROM employees
+ORDER BY salary
+
+-- order by salary descending
+SELECT * FROM employees
+ORDER BY salary DESC
+
+
+-- order by and NULL 
+SELECT * FROM employees
+ORDER BY commission_pct desc
+
+
+--order by otatl salary
+--salary*(1+NVL(commission_pct,0))
+SELECT salary*(1+NVL(commission_pct,0)) ,employees.* FROM employees
+ORDER BY salary*(1+NVL(commission_pct,0))  
+
+
+SELECT salary*(1+NVL(commission_pct,0)) AS total_salary,
+       employees.* FROM employees
+-- WHERE total_salary>10000 wrong alias usage
+ORDER BY total_salary
+
+    -- 
+    SELECT salary*(1+NVL(commission_pct,0)) AS total_salary,
+       employees.* FROM employees
+ WHERE salary*(1+NVL(commission_pct,0))>10000 
+
+
+-- Order by multiple columns
+SELECT  department_id, salary, first_name,last_name 
+FROM employees
+ORDER BY department_id, salary
+
+
+-- Group BY
+
+-- Find total salary for each department
+
+SELECT department_id, SUM(salary) -- Group function
+FROM employees
+GROUP BY department_id -- Group key
+select * from employees where department_id is null
+-- Wrong SQL
+SELECT department_id,salary, SUM(salary) -- Group function
+FROM employees
+GROUP BY department_id  -- Group key
+
+-- Group BY execution logic
+SELECT NVL(department_id,0), SUM(salary) -- Group function
+FROM employees
+GROUP BY department_id -- Group key
+
+
+SELECT NVL(department_id,0), SUM(salary) -- Group function
+FROM employees
+GROUP BY NVL(department_id,0)-- Group key
+
+SELECT department_id+1+3, SUM(salary), COUNT(*), AVG(salary) -- Group function
+FROM employees
+GROUP BY department_id+1 -- Group key
+
+    -- ayman
+select department_id , count(*) from employees group by department_id
+    
+-- Group by all table data
+
+SELECT count(*), TRUNC(AVG(salary),2),SUM(salary) 
+FROM employees
+
+-- Group function can not be used in the WHERE part 
+
+SELECT department_id ,COUNT(*) 
+FROM employees
+WHERE COUNT(*)>3
+GROUP BY department_id 
+
+-- HAVING
+-- find the departments that have more than 3 employees
+SELECT department_id,COUNT(*) 
+FROM employees
+GROUP BY department_id 
+HAVING COUNT(*)>=3 
+
+
+-- HAVING
+-- find the departments that have more than 3 employees 
+-- whose salary bigger than 10000
+SELECT department_id,COUNT(*) 
+FROM employees
+WHERE salary>10000
+GROUP BY department_id 
+HAVING COUNT(*)>=3 
+
+    select * from employees where department_id = 80
+
+-- Display group function results
+
+-- find the departments that have more than 3 employees 
+-- whose salary bigger than 10000
+SELECT AVG(salary) 
+FROM employees 
+GROUP BY department_id 
+HAVING COUNT(*)>=3
+
+
+SELECT AVG(commission_pct)
+FROM employees 
+
+SELECT AVG(NVL(commission_pct,0))
+FROM employees 
+
+SELECT COUNT(commission_pct)
+FROM employees 
+
+    SELECT COUNT(NVL(commission_pct,0))
+FROM employees 
+
+--- Group function and aliasing
+SELECT department_id,AVG(salary) 
+FROM employees 
+GROUP BY department_id 
+ORDER BY AVG(salary) 
+
+SELECT department_id,AVG(salary) avg_sal
+FROM employees 
+GROUP BY department_id 
+ORDER BY avg_sal 
+
+
+--IN
+-- Set search
+
+SELECT *
+FROM employees 
+WHERE department_id IN (10,20,30)
+
+-- ?? where is the null ?
+SELECT *
+FROM employees 
+WHERE department_id NOT IN (10,20,30) 
+--??
+SELECT *
+FROM employees 
+WHERE department_id NOT IN (10,20,NULL)
+
+    --??
+SELECT *
+FROM employees 
+WHERE department_id IS NOT NULL
+--Sub query
+SELECT * FROM departments
+
+-- find employees who works in Administration department
+-- find employees who works in Administration department
+
+
+SELECT * 
+FROM employees
+WHERE department_id IN (
+    SELECT department_id 
+    FROM departments 
+    WHERE department_name = 'Administration'
+)
+
+-- lab question 1 
+select * from employees where department_id in (select department_id from departments where location_id in 
+    (select location_id from locations where country_id in (select country_id from countries where region_id in (select region_id from regions where region_name = 'Europe'))))
+-- lab question 2
+select * from employees e where exists (select department_id from departments d where e.department_id = d.department_id and exists (select location_id from locations l where d.location_id=l.location_id and exists (select country_id from countries c where l.country_id=c.country_id and exists (select region_id from regions r where c.region_id = r.region_id and region_name = 'Europe'))))
+
+-- q3 
+-- my solution extra checking for the employees who worked previosley on that job 
+select first_name from employees where job_id in (select job_id from jobs where job_id = 'SA_REP' and job_id in (select job_id from job_history where end_date is not null ))
+SELECT * FROM job_history
+-- anoother solution 
+select first_name from employees e where exists (select * from job_history j where e.job_id=j.job_id and j.job_id='SA_REP' and end_date is not null)
+
+
+
+-- q4
+
+SELECT first_name, last_name 
+FROM employees 
+WHERE employee_id IN (
+    SELECT employee_id 
+    FROM job_history 
+    WHERE end_date is not null and job_id IN (
+        SELECT job_id 
+        FROM jobs 
+        WHERE job_title = 'Sales Representative'
+    )
+)
+-- q4 w exist
+     SELECT * FROM employees e
+     WHERE EXISTS (SELECT employee_id FROM job_history jh
+                   WHERE e.employee_id = jh.employee_id and jh.end_date is not null
+                     AND EXISTS (SELECT job_id FROM jobs j
+                                 WHERE jh.job_id = j.job_id
+                                   AND j.job_title = 'Sales Representative'))
+-- Q5
+SELECT * FROM departments d
+     WHERE NOT EXISTS (SELECT * FROM employees e
+                       WHERE e.department_id = d.department_id 
+                         AND NOT EXISTS (SELECT * FROM jobs j
+                                         WHERE j.job_id = e.job_id
+                                           AND j.max_salary = e.salary));
+
+
+-- I GUESS WE HAVE ERROR HERE WE GET THE DEPARTMENTS EVEN IF THERE NO ONE WORK RIGHT THERE !!
+-- TO SOLVE IT THIS IS THE SOLUTION BELLOW !
+SELECT * 
+FROM departments d
+WHERE EXISTS (
+    SELECT *
+    FROM employees e
+    WHERE e.department_id = d.department_id
+)
+AND NOT EXISTS (
+    SELECT * 
+    FROM employees e
+    WHERE e.department_id = d.department_id 
+      AND NOT EXISTS (
+          SELECT * 
+          FROM jobs j
+          WHERE j.job_id = e.job_id
+            AND j.max_salary = e.salary
+      )
+);
+
+
+
+select * from jobs
+select * from employees where department_id > 120
+
+    SELECT * FROM departments d
+     WHERE NOT EXISTS (SELECT * FROM employees e
+                       WHERE e.department_id = d.department_id 
+                         AND NOT EXISTS (SELECT * FROM jobs j
+                                         WHERE j.job_id = e.job_id
+                                           AND j.max_salary = e.salary));
+
+- --Q6
+
+    SELECT * FROM employees e
+     WHERE NOT EXISTS (SELECT * FROM job_history jh
+                       WHERE jh.employee_id = e.employee_id);
+
+-- = 
+SELECT * FROM employees e
+     WHERE  EXISTS (SELECT * FROM job_history jh
+                       WHERE jh.employee_id != e.employee_id);
+
+
+
+-- Q7
+
+select * from locations l where exists (select location_id from departments d where l.location_id=d.location_id group by d.location_id having count(*)>1)
+
+ SELECT * FROM locations
+     WHERE location_id IN
+           (SELECT location_id  FROM departments
+            GROUP BY location_id
+            HAVING COUNT(*) > 1);
+-- USING EXIST
+
+SELECT * FROM locations l where exists (select * from departments d where l.location_id = d.location_id group by d.location_id having count(*)>1)
+
+
+-- 
+-- Find employees in 'Finance' department whose salary is not equal to any of their subordinates' salaries:
+select * from employees e    where exists (select * from departments d where e.department_id = d.department_id and d.department_name = 'Finance' ) and exists(select * from employees m where e.employee_id != m.employee_id and e.salary != m.salary)
+
+    SELECT * FROM employees m
+     WHERE EXISTS (SELECT * FROM departments d
+                   WHERE d.department_id = m.department_id 
+                     AND d.department_name = 'Finance')
+       AND NOT EXISTS (SELECT * FROM employees e
+                       WHERE e.manager_id = m.employee_id
+                         AND e.salary = m.salary);
+
+select * from employees e where exists (select department_id from departments d where e.department_id=d.department_id and department_name = 'Finance' and exists(select department_id from employees m where e.employee_id != m.employee_id and e.salary!=m.salary))
+
+
+
+
+    
+
+--  14.11..2024    lab q1
+-- --Find the people who receive the same salary in departments numbered 90 by matching them.
+
+select * from
+(select * from employees where department_id=90) e90
+join
+(
+select salary , count(*) from employees
+    where department_id=90
+    group by salary
+    having count(*) > 1
+    ) samesalaryworkat90
+    on e90.salary = samesalaryworkat90.salary
+
+
+    -- seconde solution
+
+
+    
+-- q2 
+
+    -- Find the number of people working in countries.
+
+    select c.country_id ,c.country_name, count(*) from employees e join departments d on e.department_id=d.department_id join locations l on d.location_id=l.location_id join countries c on l.country_id=c.country_id group by c.country_id , c.country_name
+
+select c.country_id , c.country_name , count(e.employee_id) from employees e , departments d , locations l , countries c 
+    where e.department_id = d.department_id and d.location_id=l.location_id and l.country_id=c.country_id
+group by c.country_id , c.country_name
+    
+select  d.department_id , d.department_name , count(*) from employees e join departments d on e.department_id=d.department_id join locations l on d.location_id=l.location_id join countries c on l.country_id = c.country_id group by d.department_id  , d.department_name
+
+
+
+-- q3
+-- extra question ====  with their departments manager  --Find the people who work in different department with their managers.-- ابحث عن الأشخاص الذين يعملون في أقسام مختلفة مع مديريهم.
+
+select * from employees e , employees m 
+    where e.manager_id = m.employee_id
+    and e.department_id != m.department_id
+
+    SELECT *  FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.department_id != m.department_id;
+
+-- wtf is this question so hard    
+-- extra q  --Find the people who work in different department with their departments' managers. - - ابحث عن الأشخاص الذين يعملون في أقسام مختلفة مع مديري أقسامهم.
+
+select * from employees e join departments d on e.department_id=d.department_id join employees m on d.manager_id=m.employee_id where e.department_id != m.manager_id
+
+
+    select * from employees e , employees m , departments d
+    where e.department_id = d.department_id
+    and m.employee_id = d.manager_id
+    and e.department_id != m.manager_id
+
+
+-- q4
+
+    
+select region_id , region_name from regions  minus
+    select r.region_id , region_name from employees e , departments d , locations l , countries c , regions r 
+    where e.department_id = d.department_id and d.location_id=l.location_id and l.country_id=c.country_id and c.region_id =r.region_id
+
+    
+    -- Find the regions where no one works.
+select region_id , region_name from regions 
+    minus
+select r.region_id , r.region_name from regions r join countries c on r.region_id=c.region_id join locations l on c.country_id=l.country_id join departments d on l.location_id = d.location_id join employees e on d.department_id = e.department_id
+
+
+    
+    --my solution
+select region_id  from regions    
+where region_id  not in (
+select r.region_id  from  regions r , countries c , locations l , departments d , employees e
+    where r.region_id = c.region_id
+and c.country_id = l.country_id
+and l.location_id = d.location_id
+and d.department_id = e.department_id
+
+)
+    
+--- Find the jobs that are employees who receive a salary at the upper limit of the jobs (max_salary).
+SELECT * FROM employees e, jobs j
+WHERE e.job_id=j.job_id
+AND e.salary=j.max_salary
+    
+
+-- q5  
+-- Find the managers whose salary is more than the total salary of the people they manage.
+    select * from
+(SELECT manager_id, SUM(salary) as sum_salary
+FROM employees 
+GROUP BY manager_id ) MANAGERSandPPLWHOTheyManageSalarys
+    join (select * from employees where employee_id in (select manager_id from employees where manager_id is not null)) allmanagersinfo
+    on MANAGERSandPPLWHOTheyManageSalarys.manager_id  = allmanagersinfo.employee_id where MANAGERSandPPLWHOTheyManageSalarys.sum_salary < allmanagersinfo.salary
+    select * from employees where manager_id = 102  -- the total salary of the people he manage like manager 102 manager only 1 person and this person have 9k salary so the sum is 9k
+
+SELECT *
+FROM (
+    SELECT manager_id, SUM(salary) AS sum_salary
+    FROM employees
+    GROUP BY manager_id
+) MANAGERSandPPLWHOTheyManageSalarys
+JOIN (
+    SELECT * 
+    FROM employees 
+    WHERE employee_id IN (
+        SELECT DISTINCT manager_id 
+        FROM employees 
+        WHERE manager_id IS NOT NULL
+    )
+) allmanagersinfo
+ON MANAGERSandPPLWHOTheyManageSalarys.manager_id = allmanagersinfo.employee_id
+WHERE MANAGERSandPPLWHOTheyManageSalarys.sum_salary < allmanagersinfo.salary;
+
+
+
+SELECT employee_id, first_name, last_name
+FROM employees
+WHERE employee_id IN (
+    SELECT manager_id
+    FROM employees
+    WHERE manager_id IS NOT NULL
+);
+
+SELECT e.employee_id, e.first_name, e.last_name
+FROM employees e
+JOIN employees m ON e.employee_id = m.manager_id;
+
+
+
+
+    
+select * from (select * from employees) managers
+    join (select manager_id , sum(salary) as salaryy from employees group by manager_id ) totalSalaryOfpeopleTheyManage on managers.salary > totalSalaryOfpeopleTheyManage.salaryy
+    
+-- yanlis galiba 
+select first_name , max(salary) as whos_max_salary , max_salary  from employees e , jobs j
+where e.job_id = j.job_id
+group by e.salary , first_name , max_salary
+having whos_max_salary >= max_salary
+
+-- q6
+select * from (select manager_id , sum(salary) sum_salary
+    from employees
+    group by manager_id) mt join employees m on mt.manager_id=m.employee_id
+where m.salary>sum_salary
+
+    -- Find the managers whose salary is more than the total salary of the people they manage.
+
+    
+SELECT  * FROM (SELECT manager_id, SUM(salary) sum_salary
+FROM employees 
+GROUP BY manager_id) mt JOIN employees m ON mt.manager_id=m.employee_id
+WHERE m.salary>sum_salary
+
+
+--Find the titles that have the same average salary.
+CREATE VIEW avg_job_sal as (SELECT job_id,AVG(salary) avg_salary FROM employees GROUP BY job_id)
+
+SELECT * FROM  avg_job_sal
+WHERE avg_salary IN (
+                    SELECT avg_salary FROM avg_job_sal  
+                    GROUP BY avg_salary
+                    HAVING COUNT(*)>1 )
+
+-- 21.11.2024
+
+-- q1
+
+update employees 
+set salary = (select avg(salary) from employees)
+
+-- q2 
+  
+delete jobs where job_id not in (select nvl(job_id,0) from employees)
+
+-- q3 
+-- yanlis
+update employees 
+set salary = (select avg(salary) from employees e , departments d 
+    where e.department_id = d.department_id 
+    group by d.department_id)
+
+-- dogru cozum
+
+update employees parents
+set salary = (select avg(salary) from employees sub
+    where sub.department_id=parents.department_id)
+
+-- exta question 
+-- change the salaries of employees who salaries are lower then their department average salary to the average salary of their department.
+
+update employees parents
+set salary = (select avg(salary) from employees sub
+    where sub.department_id=parents.department_id)
+where salary<(select avg(salary) from employees sub 
+where sub.department_id = parents.department_id)
+
+
+-- q5
+select * from departments 
+update departments d
+set manager_id = (select nvl(manager_id,0) from departments dd
+where d.manager_id = dd.manager_id )
+
+select * from departments d , employees e where e.department_id != d.department_id
+
+-- ANOOTHER SOLUTION
+
+
+
+-- q6
+
+select 
+
+
+
+-- q7
+update employees e 
+set salary = (select max_salary from jobs j where j.job_id=e.job_id)
+
+--- q8
+
+
+
+
+

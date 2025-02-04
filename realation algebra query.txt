@@ -1,0 +1,158 @@
+-- List the classes with the buildings in which they are taught
+
+-- Solution 1
+π course.title, section.building (course ⨝ course.course_id=section.course_id section)
+-- Solution 2
+π course.title, section.building (σ course.course_id=section.course_id (course ⨯ section))
+
+-- Find courses that are not taken by any students. 
+
+π course.title ((π course_id course - π course_id takes) ⨝ course)
+
+-- Find the student’s advisors’ names
+
+π student.name,instructor.name  (student ⨝ student.ID=advisor.s_id advisor ⨝ advisor.i_id=instructor.ID instructor)
+
+-- Find students who are not taking any courses in the Taylor building.
+
+-- S1
+TaylorStudent= π takes.ID(σ section.building='Taylor' (takes ⨝ takes.course_id=section.course_id ∧ takes.sec_id=section.sec_id ∧      takes.semester=section.semester ∧ takes.year=section.year
+section))
+
+π ID student - TaylorStudent
+
+-- S2
+TaylorStudent= π takes.ID(σ section.building='Taylor' (takes ⨝ section))
+
+student ⨝ (π ID student - TaylorStudent)
+
+
+-- Show which buildings students are taking courses in.
+π student.name, section.building (student ⨝ takes ⨝ section)
+
+
+
+-- Find students who have met all prerequisites for the Genetics course.
+-- R÷S
+
+R = π ID,prereq_id (ρ prereq_id←course_id takes)
+S = π  prereq.prereq_id (prereq  ⨝ prereq.course_id=course.course_id (σ title='Genetics' course))
+R ÷ S
+
+
+-- //////////////////////////////////////////////////////////////////
+
+-- Find the courses which is not taken by any student
+-- Solution 1
+π course_id course - π course_id takes
+
+-- Solution 2
+allCourses = π course_id course 
+takenCourses = π course_id takes
+allCourses - takenCourses
+
+-- display each course's building 
+σ course.dept_name= department.dept_name (course ⨯ department)
+
+
+-- Find the course tites which is not taken by any student
+
+-- Assignment
+notTakenCourses = π course_id course - π course_id takes
+notTakenCoursesId = π c_id←course_id notTakenCourses
+σ c_id=course_id (notTakenCoursesId ⨯ course)
+
+-- wrong syntax
+σ course_id= π course_id course - π course_id takes
+
+-- join
+
+-- display the courses' prerequisities 
+-- cartesian product
+σ course.course_id=prereq.course_id (course ⨯ prereq)
+-- theta join
+course ⨝ course.course_id=prereq.course_id prereq
+
+-- display the courses department budget
+courseDept=course ⨝ course.dept_name=department.dept_name department
+π course.title, department.budget courseDept
+
+- NAtural join 
+
+courseDept=course ⨝ department
+π course.title, department.budget,department.dept_name courseDept
+
+
+-- Find the course tites which is not taken by any student
+
+notTakenCourses = π course_id course - π course_id takes
+notTakenCoursesId = π c_id←course_id notTakenCourses
+σ notTakenCoursesId  ⨝ course 
+
+-- Left and rigth outer join 
+course ⟕ course.course_id=takes.course_id takes
+
+takes ⟖ course.course_id=takes.course_id course
+
+-- Full outer join
+takes ⟖ course.course_id=takes.course_id course
+
+
+-- Division
+-- Find other departmetn that all course credits are the with Biology
+divident = π dept_name, credits course
+divisor=π credits (σ course.dept_name='Biology' course) 
+
+divident ÷ divisor
+
+
+σ salary > 60000 instructor
+
+π name (σ dept_name = 'Comp. Sci.' student)
+
+π course_id ( ( σ semester = 'Spring' ∧ year = 2010 takes ) ∪ ( σ semester = 'Fall' ∧ year = 2009 takes ))
+
+π ID ( ( σ semester = 'Spring' ∧ year = 2010 teaches ) ∪ ( σ semester = 'Fall' ∧ year = 2009 teaches ) )
+
+ -- ask the teacher about the next to solution !! the first one gives 6 results .. but the seconde give 5 results.
+π course_id ( ( σ semestcer = 'Spring' ∧ year = 2010 takes ) - ( σ semester = 'Fall' ∧ year = 2009 takes ))
+
+π course_id (σ semester = 'Spring' ∧ year = 2010 takes)  - π course_id ( σ semester = 'Fall' ∧ year = 2009 takes )
+
+π ID instructor - π i_id advisor
+
+π ID ( σ semester = 'Spring' ∧ year = 2010 teaches ) - π i_id advisor
+
+-- q1
+student ⨝ ( γ ID ; numberofcourses←COUNT(*) takes )
+
+-- q2
+studentcourse = (γ ID ; numberofcourses←COUNT(*) takes)  
+maxstudent = γ maxnum←MAX(numberofcourses) studentcourse
+studentcourse ⨝ numberofcourses=maxnum maxstudent
+-- q3 and q4 
+
+allinfo = course ⨝ course.course_id=takes.course_id takes
+sumoftotalcredi = γ ID ; totalcredi←SUM(course.credits) allinfo
+sumoftotalcredi ⨝ totalcredi=student.tot_cred student
+
+-- q5
+takersinfo = γ course_id ; numberoftakers←count(course_id) takes
+σ numberoftakers > 1 takersinfo
+-- q6
+takersinfo = γ course_id ; numberoftakers←count(course_id) takes
+σ numberoftakers < 2 takersinfo
+-- q8
+allinfo = classroom ⨝ classroom.room_number=section.room_number section 
+ takes ⨝ allinfo
+γ takes.course_id; numberofstudentsintheclass←count(room_number) takersinfo
+section
+-- quiz q1 
+jobs ⨝ (π jobtitle (σ  deparid=30 departments) ∩ (σ  deparid=40 departments))
+
+-- quiz q2 
+σ employee.salary<job.min_salary(jobs ⨝ jobs.jobs.id = employess.id empolyess)
+
+
+
+
